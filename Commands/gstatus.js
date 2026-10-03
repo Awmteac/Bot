@@ -2,7 +2,17 @@ const { getSettings } = require('../Database/config');
 
 const CHANNEL_JID = '120363322386211344@newsletter';
 const CHANNEL_NAME = 'Omoma Chhakchhuak';
-const channelInfo = { newsletterJid: CHANNEL_JID, newsletterName: CHANNEL_NAME };
+
+// Standard Baileys method for attributing a message to a WhatsApp Channel/Newsletter
+const channelContext = {
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+        newsletterJid: CHANNEL_JID,
+        newsletterName: CHANNEL_NAME,
+        serverMessageId: -1 // Required to render the header correctly
+    }
+};
 
 async function downloadBuffer(client, msg) {
     if (typeof msg.download === 'function') return await msg.download();
@@ -12,7 +22,7 @@ async function downloadBuffer(client, msg) {
 module.exports = {
     name: 'gstatus',
     aliases: ['groupstatus', 'gs'],
-    description: 'Posts one or multiple group statuses.',
+    description: 'Posts a channel-attributed group status.',
     run: async (context) => {
         const { client, m, prefix, IsGroup, botname } = context;
 
@@ -60,7 +70,9 @@ module.exports = {
             if (/image/.test(mime) || mtype.includes('image')) {
                 const buffer = await downloadBuffer(client, quoted);
                 return await client.sendMessage(m.chat, {
-                    groupStatusMessage: { image: buffer, caption: caption || '', ...channelInfo }
+                    image: buffer, 
+                    caption: caption || '', 
+                    contextInfo: channelContext
                 });
             }
 
@@ -68,7 +80,9 @@ module.exports = {
             if (/video/.test(mime) || mtype.includes('video')) {
                 const buffer = await downloadBuffer(client, quoted);
                 return await client.sendMessage(m.chat, {
-                    groupStatusMessage: { video: buffer, caption: caption || '', ...channelInfo }
+                    video: buffer, 
+                    caption: caption || '', 
+                    contextInfo: channelContext
                 });
             }
 
@@ -76,14 +90,18 @@ module.exports = {
             if (/audio/.test(mime) || mtype.includes('audio')) {
                 const buffer = await downloadBuffer(client, quoted);
                 return await client.sendMessage(m.chat, {
-                    groupStatusMessage: { audio: buffer, mimetype: 'audio/mp4', ...channelInfo }
+                    audio: buffer, 
+                    mimetype: 'audio/mp4',
+                    ptt: true,
+                    contextInfo: channelContext
                 });
             }
 
             // ── TEXT ──────────────────────────────────────────
             if (caption) {
                 return await client.sendMessage(m.chat, {
-                    groupStatusMessage: { text: caption, ...channelInfo }
+                    text: caption, 
+                    contextInfo: channelContext
                 });
             }
 
@@ -93,7 +111,6 @@ module.exports = {
                     text: fmt(
                         `Reply to an image, video, audio, or album — or include text.\n\n` +
                         `*Single:* Reply to 1 image/video + ${prefix}gstatus\n` +
-                        `*Multiple:* Reply to an album + ${prefix}gstatus\n` +
                         `*Text:* ${prefix}gstatus Your message here`
                     )
                 },
